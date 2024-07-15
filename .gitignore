@@ -1,0 +1,14 @@
+*.onnx
+*.pth
+*.bmodel
+*.profile
+*.npy
+*/tmp/*
+*/onnx/*
+*/pt/*
+*jit.pt
+*__pycache__*
+*/build
+*debug
+*.npz
+trace/*/llm
