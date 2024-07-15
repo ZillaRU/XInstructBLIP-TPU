@@ -1,7 +1,0 @@
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/llama.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/edit_cache.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/rebuild_cache.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/list_install_components.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/install.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/install/local.dir
-/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instuctblip_cpp/build/CMakeFiles/install/strip.dir
