@@ -39,6 +39,7 @@ from lavis.models.blip2_models.blip2_image_text_matching import Blip2ITM
 
 from lavis.models.blip2_models.blip2_t5_instruct import Blip2T5Instruct
 from lavis.models.blip2_models.blip2_vicuna_instruct import Blip2VicunaInstruct
+from lavis.models.blip2_models.blip2_vicuna_instruct_tpu import Blip2VicunaInstruct_TPU
 from lavis.models.blip2_models.blip2_vicuna_xinstruct import Blip2VicunaXInstruct
 
 from lavis.models.blip_diffusion_models.blip_diffusion import BlipDiffusion
@@ -83,6 +84,7 @@ __all__ = [
     "Blip2T5",
     "Blip2T5Instruct",
     "Blip2VicunaInstruct",
+    "Blip2VicunaInstruct_TPU",
     "Blip2VicunaXInstruct",
     "PNPVQA",
     "Img2PromptVQA",
@@ -202,6 +204,7 @@ def load_model_and_preprocess(name, model_type, is_eval=False, device="cpu"):
     model_cls = registry.get_model_class(name)
 
     # load model
+    breakpoint()
     model = model_cls.from_pretrained(model_type=model_type)
 
     if is_eval:

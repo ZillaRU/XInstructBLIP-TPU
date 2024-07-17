@@ -1,3 +1,5 @@
+# run: export LD_LIBRARY_PATH=/workspace/InstructBLIP-TPU/LLM-TPU/support/lib_pcie
+# ln -s /workspace/libsophon-0.5.1/ /opt/sophon/libsophon-current
 import torch
 from PIL import Image
 # setup device to use
@@ -5,9 +7,14 @@ device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 # load sample image
 raw_image = Image.open("../../docs/_static/Confusing-Pictures.jpg").convert("RGB")
 
+import sys
+sys.path.append("../../")
+
 from lavis.models import load_model_and_preprocess
 # loads InstructBLIP model
-model, vis_processors, _ = load_model_and_preprocess(name="blip2_vicuna_instruct", model_type="vicuna7b", is_eval=True, device=device)
+breakpoint()
+# model, vis_processors, _ = load_model_and_preprocess(name="blip2_vicuna_instruct", model_type="vicuna7b", is_eval=True, device=device)
+model, vis_processors, _ = load_model_and_preprocess(name="blip2_vicuna_instruct_tpu", model_type="vicuna7b", is_eval=True, device=device)
 
 # prepare the image
 image = vis_processors["eval"](raw_image).unsqueeze(0).to(device)

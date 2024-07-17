@@ -685,7 +685,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn) ########## trace
-        breakpoint()
+        # breakpoint()
         outputs = self.model(
             input_ids=input_ids, # none                     #  [num_beams5, 1]
             attention_mask=attention_mask, # [5, 40]        #  [5, 41]

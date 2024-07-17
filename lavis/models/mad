@@ -1,0 +1,11 @@
+基于开源tdlsdk编译走通
+DUO那边验证
+
+把玩莫斯的更新合入sophgo tdlsdk
+
+opencv3.x 内部版本 依赖
+
+定期sync
+
+基于开源opencv-riscv ali 181x
+zhiling

@@ -67,6 +67,7 @@ class BaseModel(nn.Module):
             - model (nn.Module): pretrained or finetuned model, depending on the configuration.
         """
         model_cfg = OmegaConf.load(cls.default_config_path(model_type)).model
+        breakpoint()
         model = cls.from_config(model_cfg)
 
         return model

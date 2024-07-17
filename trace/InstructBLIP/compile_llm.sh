@@ -1,4 +1,4 @@
-# ./compile_llm.sh --mode int8 --name llama2-7b # same as int4
+# ./compile_llm.sh --mode int8 --name llama2-7b --seq_length 512 # same as int4
 
 #!/bin/bash
 source /workspace/tpu-mlir/envsetup.sh

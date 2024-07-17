@@ -104,7 +104,6 @@ lavis/common/annotator/uniformer/mmcv/arraymisc/__init__.py
 lavis/common/annotator/uniformer/mmcv/arraymisc/quantization.py
 lavis/common/annotator/uniformer/mmcv/cnn/__init__.py
 lavis/common/annotator/uniformer/mmcv/cnn/alexnet.py
-lavis/common/annotator/uniformer/mmcv/cnn/builder.py
 lavis/common/annotator/uniformer/mmcv/cnn/resnet.py
 lavis/common/annotator/uniformer/mmcv/cnn/vgg.py
 lavis/common/annotator/uniformer/mmcv/cnn/bricks/__init__.py
@@ -209,7 +208,6 @@ lavis/common/annotator/uniformer/mmcv/parallel/utils.py
 lavis/common/annotator/uniformer/mmcv/runner/__init__.py
 lavis/common/annotator/uniformer/mmcv/runner/base_module.py
 lavis/common/annotator/uniformer/mmcv/runner/base_runner.py
-lavis/common/annotator/uniformer/mmcv/runner/builder.py
 lavis/common/annotator/uniformer/mmcv/runner/checkpoint.py
 lavis/common/annotator/uniformer/mmcv/runner/default_constructor.py
 lavis/common/annotator/uniformer/mmcv/runner/dist_utils.py
@@ -243,7 +241,6 @@ lavis/common/annotator/uniformer/mmcv/runner/hooks/logger/tensorboard.py
 lavis/common/annotator/uniformer/mmcv/runner/hooks/logger/text.py
 lavis/common/annotator/uniformer/mmcv/runner/hooks/logger/wandb.py
 lavis/common/annotator/uniformer/mmcv/runner/optimizer/__init__.py
-lavis/common/annotator/uniformer/mmcv/runner/optimizer/builder.py
 lavis/common/annotator/uniformer/mmcv/runner/optimizer/default_constructor.py
 lavis/common/annotator/uniformer/mmcv/utils/__init__.py
 lavis/common/annotator/uniformer/mmcv/utils/config.py
@@ -280,7 +277,6 @@ lavis/common/annotator/uniformer/mmseg/core/evaluation/class_names.py
 lavis/common/annotator/uniformer/mmseg/core/evaluation/eval_hooks.py
 lavis/common/annotator/uniformer/mmseg/core/evaluation/metrics.py
 lavis/common/annotator/uniformer/mmseg/core/seg/__init__.py
-lavis/common/annotator/uniformer/mmseg/core/seg/builder.py
 lavis/common/annotator/uniformer/mmseg/core/seg/sampler/__init__.py
 lavis/common/annotator/uniformer/mmseg/core/seg/sampler/base_pixel_sampler.py
 lavis/common/annotator/uniformer/mmseg/core/seg/sampler/ohem_pixel_sampler.py
@@ -288,7 +284,6 @@ lavis/common/annotator/uniformer/mmseg/core/utils/__init__.py
 lavis/common/annotator/uniformer/mmseg/core/utils/misc.py
 lavis/common/annotator/uniformer/mmseg/datasets/__init__.py
 lavis/common/annotator/uniformer/mmseg/datasets/ade.py
-lavis/common/annotator/uniformer/mmseg/datasets/builder.py
 lavis/common/annotator/uniformer/mmseg/datasets/chase_db1.py
 lavis/common/annotator/uniformer/mmseg/datasets/cityscapes.py
 lavis/common/annotator/uniformer/mmseg/datasets/custom.py
@@ -305,7 +300,6 @@ lavis/common/annotator/uniformer/mmseg/datasets/pipelines/loading.py
 lavis/common/annotator/uniformer/mmseg/datasets/pipelines/test_time_aug.py
 lavis/common/annotator/uniformer/mmseg/datasets/pipelines/transforms.py
 lavis/common/annotator/uniformer/mmseg/models/__init__.py
-lavis/common/annotator/uniformer/mmseg/models/builder.py
 lavis/common/annotator/uniformer/mmseg/models/backbones/__init__.py
 lavis/common/annotator/uniformer/mmseg/models/backbones/cgnet.py
 lavis/common/annotator/uniformer/mmseg/models/backbones/fast_scnn.py
@@ -578,23 +572,6 @@ lavis/configs/models/pnp-vqa/unifiedqav2_3b_config.json
 lavis/configs/models/pnp-vqa/unifiedqav2_base_config.json
 lavis/configs/models/pnp-vqa/unifiedqav2_large_config.json
 lavis/datasets/data_utils.py
-lavis/datasets/builders/__init__.py
-lavis/datasets/builders/audio_caption_builder.py
-lavis/datasets/builders/audio_qa_builder.py
-lavis/datasets/builders/base_dataset_builder.py
-lavis/datasets/builders/caption_builder.py
-lavis/datasets/builders/classification_builder.py
-lavis/datasets/builders/dialogue_builder.py
-lavis/datasets/builders/discrn_builders.py
-lavis/datasets/builders/image_text_pair_builder.py
-lavis/datasets/builders/imagefolder_builder.py
-lavis/datasets/builders/object3d_caption_builder.py
-lavis/datasets/builders/object3d_classification_builder.py
-lavis/datasets/builders/object3d_qa_builder.py
-lavis/datasets/builders/retrieval_builder.py
-lavis/datasets/builders/text_to_image_generation_builder.py
-lavis/datasets/builders/video_qa_builder.py
-lavis/datasets/builders/vqa_builder.py
 lavis/datasets/datasets/aok_vqa_datasets.py
 lavis/datasets/datasets/audio_captioning_datasets.py
 lavis/datasets/datasets/audio_classification_datasets.py
@@ -670,6 +647,7 @@ lavis/models/blip2_models/blip2_qformer.py
 lavis/models/blip2_models/blip2_t5.py
 lavis/models/blip2_models/blip2_t5_instruct.py
 lavis/models/blip2_models/blip2_vicuna_instruct.py
+lavis/models/blip2_models/blip2_vicuna_instruct_tpu.py
 lavis/models/blip2_models/blip2_vicuna_xinstruct.py
 lavis/models/blip2_models/modeling_llama.py
 lavis/models/blip2_models/modeling_opt.py
@@ -722,7 +700,6 @@ lavis/models/ulip_models/pointbert/logger.py
 lavis/models/ulip_models/pointbert/misc.py
 lavis/models/ulip_models/pointbert/point_encoder.py
 lavis/models/ulip_models/utils/__init__.py
-lavis/models/ulip_models/utils/build.py
 lavis/models/ulip_models/utils/config.py
 lavis/models/ulip_models/utils/io.py
 lavis/models/ulip_models/utils/logger.py
@@ -1180,6 +1157,7 @@ lavis/tasks/vqa.py
 lavis/tasks/vqa_reading_comprehension.py
 projects/img2llm-vqa/img2llm_vqa.py
 projects/instructblip/run_demo.py
+projects/instructblip/test_main.py
 projects/xinstructblip/data_aug/3d_qa_data_generation.py
 projects/xinstructblip/data_aug/audio_qa_data_generation.py
 projects/xinstructblip/demo/run_demo.py
@@ -1201,3 +1179,6 @@ tests/models/test_albef.py
 tests/models/test_blip.py
 tests/models/test_blip2.py
 tests/models/test_pnp_vqa.py
+trace/npuengine.py
+trace/InstructBLIP/trace_others.py
+trace/InstructBLIP/trace_vicuna.py

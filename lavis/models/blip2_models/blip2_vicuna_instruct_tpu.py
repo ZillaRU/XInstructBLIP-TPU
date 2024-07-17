@@ -16,7 +16,7 @@ from packaging import version
 import torch
 from torch.cuda.amp import autocast as autocast
 import torch.nn as nn
-
+import numpy as np
 import transformers
 
 from lavis.common.registry import registry
@@ -24,6 +24,12 @@ from lavis.models.blip2_models.blip2 import Blip2Base, disabled_train
 from lavis.models.blip2_models.Qformer import BertConfig
 
 from npuengine import EngineOV
+from transformers import LlamaTokenizer
+
+import sys
+module_path = "/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instructblip_cpp"
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
 @registry.register_model("blip2_vicuna_instruct_tpu")
 class Blip2VicunaInstruct_TPU(Blip2Base):
@@ -44,15 +50,13 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
 
     def __init__(
         self,
-        vit_model="./trace/InstructBLIP/visual_encoder_F32.bmodel",
-        qformer_model="./trace/InstructBLIP/Qformer_F16.bmodel",
+        vit_model="../../trace/InstructBLIP/bmodel/visual_encoder_F32.bmodel",
+        qformer_model="../../trace/InstructBLIP/bmodel/Qformer_F16.bmodel",
         img_size=224,
         drop_path_rate=0,
-        use_grad_checkpoint=False,
-        vit_precision="fp16",
-        freeze_vit=True,
+        llm_model='/workspace/vicuna-7b-1.1',
+        gpt_bmodel_path='../../trace/InstructBLIP/bmodel/llama2-7b_int4_1dev_512.bmodel',
         num_query_token=32,
-        llm_model="",
         prompt="",
         max_txt_len=128,
         max_output_txt_len=256,
@@ -61,10 +65,6 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
         device_id=0
     ):
         super().__init__()
-        transformers_version = version.parse(transformers.__version__)
-        assert transformers_version >= version.parse("4.28"), "BLIP-2 Vicuna requires transformers>=4.28"        
-        from transformers import LlamaTokenizer
-        from lavis.models.blip2_models.modeling_llama import LlamaForCausalLM
         
         self.tokenizer = self.init_tokenizer(truncation_side="left")
         self.visual_encoder_with_ln_vision = EngineOV(model_path=vit_model, batch=1, device_id=device_id)
@@ -94,15 +94,13 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
         self.llm_tokenizer.add_special_tokens({'eos_token': '</s>'})
         self.llm_tokenizer.add_special_tokens({'unk_token': '</s>'})
         # self.llm_tokenizer.pad_token = self.llm_tokenizer.unk_token
-
-        # import llama_tpu
-        self.llm_model = LlamaForCausalLM.from_pretrained(
-            llm_model, torch_dtype=torch.float16
-        )
-        self.llm_model.resize_token_embeddings(len(self.llm_tokenizer))
-
-        for name, param in self.llm_model.named_parameters():
-            param.requires_grad = False
+        self.eos_token_id = self.llm_tokenizer(
+                    self.llm_tokenizer.eos_token, add_special_tokens=False
+                ).input_ids[0]
+        import llama
+        self.llm_model = llama.llama()
+        self.llm_model.init([device_id], gpt_bmodel_path)
+        self.llm_model.max_new_tokens = 256
 
         self.max_txt_len = max_txt_len
         self.max_output_txt_len = max_output_txt_len
@@ -113,30 +111,6 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
         self._lemmatizer = None
 
         self.qformer_text_input = qformer_text_input
-
-    def concat_text_input_output(self, input_ids, input_atts, output_ids, output_atts):
-        input_part_targets_len = []
-        llm_tokens = {"input_ids": [], "attention_mask": []}
-        for i in range(input_ids.size(0)):
-            this_input_ones = input_atts[i].sum()
-            input_part_targets_len.append(this_input_ones)
-            llm_tokens['input_ids'].append(
-                torch.cat([
-                    input_ids[i][:this_input_ones],
-                    output_ids[i][1:],
-                    input_ids[i][this_input_ones:]
-                ])
-            )
-            llm_tokens['attention_mask'].append(
-                torch.cat([
-                    input_atts[i][:this_input_ones],
-                    output_atts[i][1:],
-                    input_atts[i][this_input_ones:]
-                ])
-            )
-        llm_tokens['input_ids'] = torch.stack(llm_tokens['input_ids'])
-        llm_tokens['attention_mask'] = torch.stack(llm_tokens['attention_mask'])
-        return llm_tokens, input_part_targets_len
 
     @torch.no_grad()
     def generate(
@@ -243,14 +217,25 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
 
             if self.qformer_text_input:
                 breakpoint()
+                # todo: padding to [1,128] remove magic value 
+                if text_Qformer.input_ids.shape[1] > self.max_txt_len:
+                    text_Qformer.input_ids = text_Qformer.input_ids[:, :self.max_txt_len]
+                else:
+                    text_Qformer.input_ids = torch.cat([text_Qformer.input_ids, torch.zeros([1, self.max_txt_len - text_Qformer.input_ids.shape[1]], dtype=torch.int32)], dim=1)
+                if Qformer_atts.shape[1] > self.max_txt_len+32:
+                    Qformer_atts = Qformer_atts[:, :self.max_txt_len+32]
+                else:
+                    Qformer_atts = torch.cat([Qformer_atts, torch.zeros([1, self.max_txt_len+32 - Qformer_atts.shape[1]], dtype=torch.int32)], dim=1)
+                
                 inputs_llm = self.QformerBert_with_llm_proj([
-                    text_Qformer.input_ids.numpy(), # [1, 8]
-                    Qformer_atts.numpy(), # [1, 40]
-                    query_tokens.numpy(), # [1, 32, 768]
-                    image_embeds.numpy(), # [1, 257, 1408]
-                    image_atts.numpy()],
+                    text_Qformer.input_ids.numpy().astype(np.int32), # [1, 8]
+                    Qformer_atts.numpy().astype(np.int32), # [1, 40]
+                    query_tokens.numpy().astype(np.float32), # [1, 32, 768]
+                    image_embeds.numpy().astype(np.float32), # [1, 257, 1408]
+                    image_atts.numpy().astype(np.int32)], # [ 1 257 ]
                     )[0]
                 inputs_llm = torch.from_numpy(inputs_llm)
+                breakpoint()
             else:
                 breakpoint()
             #     # 没有文本prompt 可以直接传入固定的query_embeds，不需要像if里面那样计算prompt text的embedding，与固定的query_tokens拼接作为实际的embedding）
@@ -264,7 +249,7 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
             # inputs_llm = self.llm_proj(query_output.last_hidden_state[:,:query_tokens.size(1),:])
             # breakpoint()
             
-            atts_llm = torch.ones(inputs_llm.size()[:-1], dtype=torch.long).to(image.device)
+            # atts_llm = torch.ones(inputs_llm.size()[:-1], dtype=torch.long).to(image.device)
 
         llm_tokens = self.llm_tokenizer(
             prompt,
@@ -272,26 +257,31 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
             return_tensors="pt"
         ).to(image.device)
 
-        breakpoint()
         with self.maybe_autocast():
-            inputs_embeds = self.llm_model.get_input_embeddings()(llm_tokens.input_ids) # Embedding(32001, 4096)
-            inputs_embeds = torch.cat([inputs_llm, inputs_embeds], dim=1)
-            attention_mask = torch.cat([atts_llm, llm_tokens.attention_mask], dim=1)
             breakpoint()
+            # inputs_embeds = self.llm_model.get_input_embeddings()(llm_tokens.input_ids) # Embedding(32001, 4096)
             outputs = self.llm_model.generate(
-                inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask,
-                do_sample=use_nucleus_sampling,
-                top_p=top_p,
-                temperature=temperature,
-                num_beams=num_beams,
-                max_length=max_length,
-                min_length=min_length,
-                # eos_token_id=self.eos_token_id,
-                repetition_penalty=repetition_penalty,
-                length_penalty=length_penalty,
-                num_return_sequences=num_captions,
+                llm_tokens.input_ids.flatten().tolist(),
+                self.eos_token_id, # EOS_TOKEN_ID
+                inputs_llm.numpy().flatten().tolist(), # [1, 32, 4096]
             )
+            breakpoint()
+            outputs = torch.tensor(outputs, dtype=torch.long)
+
+            # outputs = self.llm_model.generate(
+            #     inputs_embeds=inputs_embeds,
+            #     attention_mask=attention_mask,
+            #     do_sample=False, # use_nucleus_sampling,
+            #     # top_p=top_p,
+            #     # temperature=temperature,
+            #     num_beams=1, #num_beams,
+            #     max_length=max_length,
+            #     min_length=min_length,
+            #     # eos_token_id=self.eos_token_id,
+            #     # repetition_penalty=repetition_penalty,
+            #     # length_penalty=length_penalty,
+            #     num_return_sequences=num_captions,
+            # )
 
         outputs[outputs == 0] = 2 # convert output id 0 to 2 (eos_token_id)
         output_text = self.llm_tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -384,48 +374,54 @@ class Blip2VicunaInstruct_TPU(Blip2Base):
 
         return self._lemmatizer
 
+
     @classmethod
     def from_config(cls, cfg):
-        vit_model = cfg.get("vit_model", "eva_clip_g")
-        img_size = cfg.get("image_size")
-        num_query_token = cfg.get("num_query_token")
-        llm_model = cfg.get("llm_model")
+        breakpoint()
+        return cls(device_id=0)
 
-        drop_path_rate = cfg.get("drop_path_rate", 0)
-        use_grad_checkpoint = cfg.get("use_grad_checkpoint", False)
-        vit_precision = cfg.get("vit_precision", "fp16")
-        freeze_vit = cfg.get("freeze_vit", True)
+    # @classmethod
+    # def from_config(cls, cfg):
+    #     vit_model = cfg.get("vit_model", "eva_clip_g")
+    #     img_size = cfg.get("image_size")
+    #     num_query_token = cfg.get("num_query_token")
+    #     llm_model = cfg.get("llm_model")
 
-        prompt = cfg.get("prompt", "")
-        max_txt_len = cfg.get("max_txt_len", 128)
-        max_output_txt_len = cfg.get("max_output_txt_len", 256)
+    #     drop_path_rate = cfg.get("drop_path_rate", 0)
+    #     use_grad_checkpoint = cfg.get("use_grad_checkpoint", False)
+    #     vit_precision = cfg.get("vit_precision", "fp16")
+    #     freeze_vit = cfg.get("freeze_vit", True)
 
-        apply_lemmatizer = cfg.get("apply_lemmatizer", False)
+    #     prompt = cfg.get("prompt", "")
+    #     max_txt_len = cfg.get("max_txt_len", 128)
+    #     max_output_txt_len = cfg.get("max_output_txt_len", 256)
 
-        qformer_text_input = cfg.get("qformer_text_input", True)
+    #     apply_lemmatizer = cfg.get("apply_lemmatizer", False)
 
-        model = cls(
-            vit_model=vit_model,
-            img_size=img_size,
-            drop_path_rate=drop_path_rate,
-            use_grad_checkpoint=use_grad_checkpoint,
-            vit_precision=vit_precision,
-            freeze_vit=freeze_vit,
-            num_query_token=num_query_token,
-            llm_model=llm_model,
-            prompt=prompt,
-            max_txt_len=max_txt_len,
-            max_output_txt_len=max_output_txt_len,
-            apply_lemmatizer=apply_lemmatizer,
-            qformer_text_input=qformer_text_input,
-        )
+    #     qformer_text_input = cfg.get("qformer_text_input", True)
+    #     breakpoint()
+    #     model = cls(
+    #         vit_model=vit_model,
+    #         img_size=img_size,
+    #         drop_path_rate=drop_path_rate,
+    #         use_grad_checkpoint=use_grad_checkpoint,
+    #         vit_precision=vit_precision,
+    #         freeze_vit=freeze_vit,
+    #         num_query_token=num_query_token,
+    #         llm_model=llm_model,
+    #         prompt=prompt,
+    #         max_txt_len=max_txt_len,
+    #         max_output_txt_len=max_output_txt_len,
+    #         apply_lemmatizer=apply_lemmatizer,
+    #         qformer_text_input=qformer_text_input,
+    #     )
 
-        # if qformer_text_input:
-        #     # Hard-coded to load from BLIP-2 stage-1 pre-trained model (not ideal)
-        #     model.load_from_pretrained(
-        #         url_or_filename="https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained.pth"
-        #     )
+    #     # if qformer_text_input:
+    #     #     # Hard-coded to load from BLIP-2 stage-1 pre-trained model (not ideal)
+    #     #     model.load_from_pretrained(
+    #     #         url_or_filename="https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained.pth"
+    #     #     )
 
-        model.load_checkpoint_from_config(cfg)
+    #     model.load_checkpoint_from_config(cfg)
 
-        return model
+    #     return model

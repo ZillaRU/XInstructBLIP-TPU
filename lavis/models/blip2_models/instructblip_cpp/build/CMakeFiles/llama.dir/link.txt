@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g -shared  -o llama.cpython-310-x86_64-linux-gnu.so CMakeFiles/llama.dir/llama.cpp.o   -L/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instructblip_cpp/../../../../LLM-TPU/support/lib_pcie  -Wl,-rpath,/workspace/InstructBLIP-TPU/lavis/models/blip2_models/instructblip_cpp/../../../../LLM-TPU/support/lib_pcie: -lbmrt -lbmlib 

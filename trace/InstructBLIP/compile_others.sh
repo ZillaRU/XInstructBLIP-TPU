@@ -20,7 +20,7 @@ model_deploy.py \
     --compare_all
 
 # model_transform.py \
-#     --model_name visual_encoder.pt \
+#     --model_name visual_encoder \
 #     --model_def ./onnx/visual_encoder/visual_encoder_onnx.onnx \
 #     --mlir visual_encoder.mlir
 

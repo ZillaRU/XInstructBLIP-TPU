@@ -373,15 +373,15 @@ class Blip2VicunaInstruct(Blip2Base):
             outputs = self.llm_model.generate(
                 inputs_embeds=inputs_embeds,
                 attention_mask=attention_mask,
-                do_sample=use_nucleus_sampling,
+                do_sample=False, ### use_nucleus_sampling,
                 top_p=top_p,
-                temperature=temperature,
-                num_beams=num_beams,
+                # temperature=temperature,
+                num_beams=1,  ###3 num_beams,
                 max_length=max_length,
                 min_length=min_length,
                 # eos_token_id=self.eos_token_id,
-                repetition_penalty=repetition_penalty,
-                length_penalty=length_penalty,
+                # repetition_penalty=repetition_penalty,
+                # length_penalty=length_penalty,
                 num_return_sequences=num_captions,
             )
 

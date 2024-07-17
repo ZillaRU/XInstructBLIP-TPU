@@ -186,7 +186,6 @@ def convert_block_cache(layer_id):
         do_constant_folding=True,
         opset_version=15)
 
-
 def convert_embedding():
     model = Embedding()
     input_ids = torch.tensor([range(SEQ_LENGTH)])
